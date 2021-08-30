@@ -124,6 +124,22 @@ z-index: 300;
 border: 1px solid #EE5859;
 }
 
+#clear_red_box {
+border-radius: 0;
+padding: 0 10px 10px 10px;
+cursor: move;
+opacity: 0.9;
+z-index: 300;
+border: 1px solid #EE5859;
+}
+
+#clear_clear_box {
+padding: 0 10px 10px 10px;
+cursor: move;
+z-index: 300;
+}
+
+
 #map_desc_mobile, #info_box_mobile {
   visibility: hidden;
 }
@@ -134,6 +150,11 @@ border: 1px solid #EE5859;
   transition: all .2s ease-in-out;
   
 }
+#clear_red_box:hover{
+  box-shadow: -1px 4px 4px 0 rgba(0,0,0,0.4);
+  transition: all .2s ease-in-out;
+}
+
 
 #sidePanel, #sidePanel2 {
   background-color: transparent;
