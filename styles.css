@@ -28,16 +28,16 @@ input[type="number"] {
     line-height: 20px;
 }
 @media screen and (max-width: 768px) {
-#controls, #logo {
+#red_box, #logo {
   display: none;
 }
 
-#controls2, .indicator {
+#red_box2, .indicator {
   font-size: 12px;
   display: flex;
 }
 
-#map_desc, #controls2, #info_box {
+#map_desc, #red_box2, #info_box {
   display: none;
 }
 
@@ -114,7 +114,7 @@ p {
 
 
 
-#controls, #controls2, #map_desc, #info_box {
+#red_box, #red_box2, #map_desc, #info_box {
 background-color: #FFFFFF;
 border-radius: 0;
 padding: 0 10px 10px 10px;
@@ -145,7 +145,7 @@ z-index: 300;
 }
 
 
-#controls:hover, #controls2:hover, #map_desc:hover, #info_box:hover {
+#red_box:hover, #red_box2:hover, #map_desc:hover, #info_box:hover {
   box-shadow: -1px 4px 4px 0 rgba(0,0,0,0.4);
   transition: all .2s ease-in-out;
   
