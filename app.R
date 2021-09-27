@@ -6,7 +6,9 @@
 
 # setwd("C:/Users/Ben SMITH/SynDrive/REACH_BGD/Resources/Templates/R Scripts/irq_mcna_dashboard/irq_mcna_dashboard")
 # TODO - make sure that colours match between series on differnt plots.
-
+# This was showing the error:
+  # R Error: object 'faststack' is not exported by 'namespace:fastmap'
+  # This was fixed by using: install.packages('fastmap')
 
 
 ############################ PREAMBLE ##########################################
@@ -36,8 +38,10 @@
   # library(htmltools)              # html scripting for R # install.packages("
   # library(expss)                  # vlookup for R # install.packages("expss")
   # library(htmlwidgets)
-  library(plotly)                 # Nice plots
   library(openxlsx)               # Reading in data
+  library(plotly)                 # Nice plots
+  
+
 
 # Read in the styling/function for HTML Chars:
 # source("Chart Setup Function.R") # chart_funct = ...
@@ -47,10 +51,12 @@
 colours = data.frame(
   reach_dark_green  = "#637961",
   reach_light_green = "#E6EFE5",
-  reach_green       = "#B0CFAC",
+  reach_green       = "#D2CBB8", # only use in trafic light colour system
+  
+  reach_beige = "#D2CBB8",
   
   reach_dk_red    = "#782c2e",
-  reach_dark_red  = "#A73E3E",
+  reach_dark_red  = "#8b3333",
   reach_mddk_red  = "#bf4749",
   reach_red       = "#EE5859",
   reach_pink      = "#f5a6a7",
@@ -60,6 +66,7 @@ colours = data.frame(
   reach_grey     = "#58585A",
   
   white          = "#FFFFFF")
+
 colour_rank = c(3,11,8,10)
 
 
@@ -97,18 +104,11 @@ for(s in age_dis_sheets){
 color_vector <- c(colours$reach_pink, colours$reach_red, colours$reach_mddk_red, 
                   colours$reach_dark_red, colours$reach_lt_grey)
 
-addLegendCustom <- function(map, colors, labels, opacity = 0.8, title) {
+addLegendCustom <- function(map, colors, labels, labels_lower_bounds, opacity = 0.8, title) {
+  # THIS ASSUMES THAT THE FINAL COLOUR represents NULL/NA
 
-  make_shapes <- function(colors) {
-    paste0(colors, "; width:20px; top: 0; height:20px; border:1px solid  white; text-align: center; border-radius:0%")
-  }
-
-  make_labels <- function(labels) {
-    paste0("<div style='display: inline-block; text-align: center; height:20px; line-height: 20px;'>", labels, "</div>")
-  }
-
-  legend_colors <- make_shapes(colors)
-  legend_labels <- make_labels(labels)
+  legend_colors <- paste0(colors, "; width:20px; top: 0; height:20px; border:1px solid  white; text-align: center; border-radius:0%")
+  legend_labels <- paste0("<div style='display: inline-block; text-align: center; height:20px; line-height: 20px;'>",  c(paste0(labels_lower_bounds, " - ", labels), "NA"), "</div>")
 
   return(addLegend(map, colors = legend_colors, labels = legend_labels, 
                    opacity = opacity, position = "bottomright", title = title))
@@ -125,7 +125,7 @@ plotly_bar_graph_shared_axes = function(data_grid_left, data_grid_right, plot_ti
   indicators = colnames(data_grid_left)
   indicators = gsub(pattern = "_", replacement = " ", x = indicators)
   
-  p = plot_ly()
+  p = plot_ly() %>% config(displayModeBar = FALSE)
   for(r in 1:nrow(data_grid_left)){
     p = p %>% add_trace(type = 'bar', name = rownames(data_grid_left)[r], 
                         x = (unlist(data_grid_left[r,])+unlist(data_grid_right[r,])), y = indicators,
@@ -145,9 +145,9 @@ plotly_bar_graph_shared_axes = function(data_grid_left, data_grid_right, plot_ti
 plotly_bar_graph = function(
   
   data_grid_left, left_title, data_grid_right, right_title, 
-  x_range=c(0,1), bar_colours = c("B0CFAC", "#58585A", "#f5a6a7", "#D1D3D4")){
+  x_range=c(0,1), bar_colours = c("D2CBB8", "#58585A", "#f5a6a7", "#D1D3D4")){
   
-  if(ncol(data_grid_left)==1 & all(bar_colours == c("B0CFAC", "#58585A", "#f5a6a7", "#D1D3D4"))){
+  if(ncol(data_grid_left)==1 & all(bar_colours == c("D2CBB8", "#58585A", "#f5a6a7", "#D1D3D4"))){
     bar_colours = "#EE5859"}
   
   # set up the y axis names:
@@ -155,7 +155,7 @@ plotly_bar_graph = function(
   indicators = gsub(pattern = "_", replacement = " ", x = indicators)
   
   # Set up plots:
-  lp = plot_ly() ; rp = plot_ly()
+  lp = plot_ly() %>% config(displayModeBar = FALSE) ; rp = plot_ly() %>% config(displayModeBar = FALSE)
   
   # Add data to plots:
   for(r in 1:nrow(data_grid_right)){
@@ -188,9 +188,9 @@ plotly_bar_graph = function(
                       font  = list(family = "Arial Narrow", size = 12),
                       xaxis = list(title = right_title, range=x_range,
                                    tickformat = "%", tick0 = 0, dtick = 0.2),
+                      paper_bgcolor = 'rgba(0,0,0,0)',
                       legend = list(orientation = 'h', xanchor = "center",
-                                    x = 0.5, y=-0.2),
-                      paper_bgcolor = 'rgba(0,0,0,0)')
+                                    x = 0.5, y=-0.2))
   
   return(subplot(lp, rp, titleX = TRUE, shareY = TRUE))
 }
@@ -202,7 +202,9 @@ plotly_bar_graph_dual_axis_single_trace =
   
   function(data_grid_left, left_col = 1, left_title,
            data_grid_right, right_col = 1, right_title, 
-           data_label, x_range=c(0,1)){
+           data_label, x_range=c(0,1),
+           plot_height = NA, plot_width = NA,
+           show_X_title = FALSE){
   
   # Input a dataframe with data in a column with row names containing the y axis labels.
   # If the dataset has multiple columns then specify which to use. Default is column 1.
@@ -217,13 +219,14 @@ plotly_bar_graph_dual_axis_single_trace =
   indicators = gsub(pattern = "_", replacement = " ", x = indicators)
   
   # Set up plots:
-  lp = plot_ly() ; rp = plot_ly()
+  lp = plot_ly(height = plot_height, width = plot_width) %>% 
+    config(displayModeBar = FALSE) ; rp = plot_ly() %>% config(displayModeBar = FALSE)
   
   # Add data to plots:
   lp = lp %>% add_trace(type = 'bar',
                         x = data_grid_left[,left_col],
                         y = indicators,
-                        marker = list(color = colours$reach_green),
+                        marker = list(color = colours$reach_red),
                         showlegend = FALSE,
                         width = 0.3)
   
@@ -232,6 +235,7 @@ plotly_bar_graph_dual_axis_single_trace =
                         y = indicators,
                         marker = list(color =  colours$reach_red),
                         name = data_label,
+                        showlegend = FALSE,
                         width = 0.3)
   
   # format the plot layouts:
@@ -265,7 +269,7 @@ plotly_bar_graph_single_trace = function(x_data, y_labels){
   y_labels = gsub(pattern = "_", replacement = " ", x = y_labels)
   
   # Set up plots:
-  rp = plot_ly()
+  rp = plot_ly() %>% config(displayModeBar = FALSE)
   
   # Add data to plots:
   rp = rp %>% add_trace(type = 'bar', 
@@ -291,48 +295,53 @@ plotly_bar_graph_single_trace = function(x_data, y_labels){
 # ---- Barrier_Mobility_pie ----------------------------------------------
 
 Barrier_Mobility_pie = 
-  plot_ly() %>% 
+  plot_ly() %>% config(displayModeBar = FALSE) %>% 
+  
   add_pie(values = c(52, 48),
           hoverinfo = 'text',
-          text = c(paste('</br><b>52% of persons with disabilities aged 2 and above</br>reportedly face difficulties moving inside shelters</br>without support from others.</b></br></br>Significantly higher proportions of persons with difficulties</br>in functioning in the self-care, upper-body movement,</br>and mobility domains were reported as facing barriers,</br>compared to persons with difficulties in functioning not</br>in those domains.'),
-                   ""),
+          text = c(paste('</br><b>52% of persons with disabilities aged 2 and above</br>reportedly face difficulties moving inside shelters</br>without support from others.</b></br></br>Significantly higher proportions of persons with difficulties</br>in functioning in the self-care, upper-body movement,</br>and mobility domains were reported as facing barriers,</br>compared to persons with difficulties in functioning not</br>in those domains.'), ""),
           hole = 0.6, sort = FALSE,
           marker = list(colors = c(colours$reach_red, colours$reach_grey), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0, 0.5), y = c(0.5, 1))) %>% 
+          domain = list(x = c(0, 0.5), y = c(0.45, 0.95))) %>% 
   
   add_pie(values = c(76, 24),
           hoverinfo = 'text',
           text = c(paste('</br><b>76% of persons with disabilities ages 15 and above</br>reportedly face difficulties moving around camps.</br></b></br>Significantly higher proportions of persons with difficulties</br>in functioning in the self-care and mobility domains</br>were reported as facing barriers, compared to persons with</br>difficulties in functioning not in those domains.'), ""),
-          # labels = c("a", "b"), 
           hole = 0.6, sort = FALSE,
           marker = list(colors = c(colours$reach_red, colours$reach_grey), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0.5, 1), y = c(0.5, 1))) %>% 
+          domain = list(x = c(0.5, 1), y = c(0.45, 0.95))) %>% 
   
   add_pie(values = c(29, 71),
           hoverinfo = 'text',
-          text = c(paste('</br><b>29% of persons without disabilities aged 15 and above</br>reportedly face difficulties moving around camps.</b>'), ""),
+          text = c(paste('</br><b>29% of persons without disabilities aged 15+</br>reportedly face difficulties moving around camps.</b>'), ""),
           # labels = c("a", "b"), 
           hole = 0.6, sort = FALSE,
-          marker = list(colors = c(colours$reach_green, colours$reach_grey), 
+          marker = list(colors = c(colours$reach_beige, colours$reach_grey), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0.25, 0.25), y = c(0., 0.5))) %>% 
+          domain = list(x = c(0.25, 0.25), y = c(0.02, 0.52))) %>% 
   
-  add_annotations(x = c(0.18,0.85, 0.51),
-                  y = c(0.82, 0.82, 0.18),
+  # Titles:
+  add_annotations(x = c(-0.07, 1, 0.25),
+                  y = c(1.07, 1.07, -0.1),
+                  text = c(HTML("% of persons with disabilities aged 2+<br>facing difficulties moving inside shelters"),
+                           HTML("% of persons with disabilities ages 15+<br>facing difficulties moving around camps"), 
+                           HTML("% of persons without disabilities aged 15+<br>facing difficulties moving around camps")),
+                  showarrow = FALSE, ax = 0, ay = 0,
+                  font = list(family = "Arial Narrow", size = 12)) %>% 
+  
+  # Percentage labels:
+  add_annotations(x = c(0.18, 0.85, 0.52),
+                  y = c(0.78, 0.78, 0.20),
                   text = c("52%", "76%", "29%"),
-                  # xref = "x",
-                  # yref = "y",
-                  showarrow = FALSE,
-                  ax = 0,
-                  ay = 0, 
+                  showarrow = FALSE, ax = 0, ay = 0, 
                   font = list(family = "Arial Narrow", size = 40)) %>% 
   
   layout(font = list(family = "Arial Narrow", size = 20), paper_bgcolor = 'rgba(0,0,0,0)')
@@ -341,17 +350,17 @@ Barrier_Mobility_pie =
 # ---- Barrier_WASH_pie --------------------------------------------------
 
 Barrier_WASH_pie = 
-  plot_ly() %>% 
+  plot_ly() %>% config(displayModeBar = FALSE) %>% 
   add_pie(values = c(34, 66),
           hoverinfo = 'text',
-          text = c(paste('</br><b>34% of persons with disabilities aged 2 and above are</br>reportedly not able to showe/bathe without support from others.</b></br></br>Significantly higher proportions of persons with difficulties in functioning</br>in the self-care, upper-body movement, and mobility domains were</br>reported as facing barriers, compared to persons with</br>difficulties in functioning not in those domains.'),
+          text = c(paste('</br><b>34% of persons with disabilities aged 2 and above are</br>reportedly not able to shower/bathe without support from others.</b></br></br>Significantly higher proportions of persons with difficulties in functioning</br>in the self-care, upper-body movement, and mobility domains were</br>reported as facing barriers, compared to persons with</br>difficulties in functioning not in those domains.'),
                    ""),
           hole = 0.6, sort = FALSE,
           marker = list(colors = c(colours$reach_red, colours$reach_grey), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0, 0.5), y = c(0.52, 1))) %>% 
+          domain = list(x = c(0.0, 0.46), y = c(0.5, 0.96))) %>% 
   
   add_pie(values = c(30, 70),
           hoverinfo = 'text',
@@ -362,7 +371,7 @@ Barrier_WASH_pie =
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0.5, 1), y = c(0.52, 1))) %>% 
+          domain = list(x = c(0.54, 1), y = c(0.5, 0.96))) %>% 
   
   add_pie(values = c(64, 36),
           hoverinfo = 'text',
@@ -372,28 +381,34 @@ Barrier_WASH_pie =
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0, 0.5), y = c(0, 0.48))) %>% 
+          domain = list(x = c(0, 0.46), y = c(0, 0.46))) %>% 
   
   add_pie(values = c(39, 61),
           hoverinfo = 'text',
           text = c(paste('</br><b>39% of persons without disabilities aged 15 and above</br>reportedly face barriers accessing services.</b>'), ""),
           # labels = c("a", "b"), 
           hole = 0.6, sort = FALSE,
-          marker = list(colors = c(colours$reach_green, colours$reach_grey), 
+          marker = list(colors = c(colours$reach_beige, colours$reach_grey), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0.5, 1), y = c(0, 0.48))) %>% 
+          domain = list(x = c(0.54, 1), y = c(0, 0.46))) %>% 
   
-  add_annotations(x = c(0.18, 0.85, 0.18, 0.85),
-                  y = c(0.82, 0.82, 0.16, 0.16),
+  add_annotations(x = c(0.17, 0.87, 0.17, 0.87),
+                  y = c(0.8, 0.8, 0.16, 0.16),
                   text = c("34%", "30%", "64%", "39%"),
-                  # xref = "x",
-                  # yref = "y",
-                  showarrow = FALSE,
-                  ax = 0,
-                  ay = 0, 
+                  showarrow = FALSE, ax = 0, ay = 0, 
                   font = list(family = "Arial Narrow", size = 40)) %>% 
+  
+  add_annotations(x = c(-0.05, 0.95, -0.05, 0.97),
+                  y = c(1.07, 1.07, -0.1, -0.1),
+                  text = c(
+HTML('% of persons with disabilities aged 2+<br>requiring assistance when showering/bathing'),
+HTML('% of persons with disabilities aged 2+<br>requiring assistance when using latrines'),
+HTML("% of persons with disabilities aged 15+<br>reportedly facing barriers accessing services"),
+HTML("% of persons without disabilities aged 15+<br>reportedly facing barriers accessing services")),
+                  showarrow = FALSE, ax = 0, ay = 0, 
+                  font = list(family = "Arial Narrow", size = 12)) %>% 
   
   layout(font = list(family = "Arial Narrow", size = 20), paper_bgcolor = 'rgba(0,0,0,0)')
 
@@ -402,14 +417,14 @@ Barrier_WASH_pie =
 
 Barrier_devices_pie = 
   
-  plot_ly() %>% 
+  plot_ly() %>% config(displayModeBar = FALSE) %>% 
   
   add_pie(values = c(22, 22, 56),
-          labels = c("Any", "Didn't need any", "Didn't receive any despite needing them"),
+          labels = c("Devices were recieved", "Devices were not needed", "Devices were not recieved, despite being needed"),
           hoverinfo = 'text',
           text = "Persons with disabilities aged 2 and above.",
           hole = 0.6, sort = FALSE,
-          marker = list(colors = c(colours$reach_green, colours$reach_grey, colours$reach_red), 
+          marker = list(colors = c(colours$reach_beige, colours$reach_grey, colours$reach_red), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'percent', 
           textposition = 'inside', 
@@ -420,11 +435,11 @@ Barrier_devices_pie =
           domain = list(x = c(0, 0.5), y = c(0.5, 1))) %>%
   
   add_pie(values = c(29, 19, 52),
-          labels = c("Any", "Didn't need any", "Didn't receive any despite needing them"),
+          labels = c("Devices were recieved", "Devices were not needed", "Devices were not recieved, despite being needed"),
           hoverinfo = 'text',
           text = "All older persons with and without disabilities.",
           hole = 0.6, sort = FALSE,
-          marker = list(colors = c(colours$reach_green, colours$reach_grey, colours$reach_red), 
+          marker = list(colors = c(colours$reach_beige, colours$reach_grey, colours$reach_red), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'percent', 
           textposition = 'inside', 
@@ -443,7 +458,7 @@ Barrier_devices_pie =
                   ay = 0, 
                   font = list(family = "Arial Narrow", size = 12)) %>% 
   
-  layout(font = list(family = "Arial Narrow", size = 18), 
+  layout(font = list(family = "Arial Narrow", size = 14), 
          paper_bgcolor = 'rgba(0,0,0,0)',
          legend = list(x = -0.1, y = 0.4, bgcolor = 'rgba(0,0,0,0)'))
 
@@ -458,9 +473,10 @@ data <- data.frame(Groups = c("2-99<br>with Disabilities", "18-59<br>with Disabi
 
 Barrier_Devices_Gender_Bar = 
   plot_ly(data, x = ~Groups, y = ~Female, type = 'bar', name = 'Female',
-        marker = list(color = c(colours$reach_grey))) %>%
+        marker = list(color = c(colours$reach_grey))) %>% 
   add_trace(y = ~Male, name = 'Male', 
             marker = list(color = c(colours$reach_lt_grey))) %>% 
+  config(displayModeBar = FALSE) %>%
   layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
          xaxis = list(title = "", categoryorder = "array", categoryarray = ~Groups),
          font  = list(family = "Arial Narrow", size = 12),
@@ -484,21 +500,23 @@ Education_1 = subplot(nrows = 1, shareY = TRUE, titleX = TRUE,
             showlegend = FALSE) %>%
     add_trace(y = ~Other_5_9, name = 'Other', 
               marker = list(color = c(colours$reach_lt_grey))) %>% 
-    layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
+    layout(yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
            xaxis = list(title = "5-9 Years", categoryorder = "array", categoryarray = ~Groups),
            font  = list(family = "Arial Narrow", size = 12),
            # legend = list(showlegend = FALSE),
-           barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)'),
+           barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+      config(displayModeBar = FALSE),
     
     plot_ly(data, x = ~Groups, y = ~TLC_10_14, type = 'bar', name = 'TLC',
             marker = list(color = c(colours$reach_grey))) %>%
       add_trace(y = ~Other_10_14, name = 'Other', 
                 marker = list(color = c(colours$reach_lt_grey))) %>% 
-      layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
+      layout(yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
              xaxis = list(title = "10-14 Years", categoryorder = "array", categoryarray = ~Groups),
              font  = list(family = "Arial Narrow", size = 12),
              legend = list(showlegend = FALSE),
-             barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)')
+             barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+      config(displayModeBar = FALSE)
     
     # TODO - Add limitations:
     # Limitations
@@ -517,7 +535,7 @@ Education_1 = subplot(nrows = 1, shareY = TRUE, titleX = TRUE,
 
 # ---- Education Highest levels (Education 2) ------------------------------
 
-data1 <- data.frame("Groups" = c("Persons<br>with<br>Disabilities", "Persons<br>without<br>Disabilities"),
+data1 <- data.frame("Groups" = c("With<br>Disabilities", "Without<br>Disabilities"),
                    
                    "None_5_9" = c(29,5),      "PrePrimary_5_9" = c(20,32),
                    "Primary_5_9" = c(23,42),  "Secondary_5_9" = c(0,0),
@@ -540,17 +558,18 @@ Education_2 =
                 text = paste0(data1$Primary_5_9, "%"), textposition = "auto") %>% 
       add_trace(y = ~Secondary_5_9, name = 'Secondary', marker = list(color = c(colours$reach_grey)),
                 text = paste0(data1$Secondary_5_9, "%"), textposition = "auto") %>% 
-      add_trace(y = ~Madrasha_5_9, name = 'Madrasha', marker = list(color = c(colours$reach_green)),
+      add_trace(y = ~Madrasha_5_9, name = 'Madrasha', marker = list(color = c(colours$reach_beige)),
                 text = paste0(data1$Madrasha_5_9, "%"), textposition = "auto") %>% 
       add_trace(y = ~Learning_Centre_5_9, name = 'Learning Centre', marker = list(color = c(colours$reach_lt_grey)),
                 text = paste0(data1$Learning_Centre_5_9, "%"), textposition = "auto") %>%
       
-      layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
+      layout(yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
              xaxis = list(title = "5-9 Years", categoryorder = "array", categoryarray = ~Groups),
              font  = list(family = "Arial Narrow", size = 12),
+             uniformtext=list(minsize=8, mode = 'hide'),
              barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)'#,
              # legend = list(showlegend = FALSE)
-             ),
+             ) %>% config(displayModeBar = FALSE),
     
     plot_ly(data1, x = ~Groups, type = 'bar', showlegend = FALSE,
             y = ~None_10_17, name = 'None', marker = list(color = c(colours$reach_red)),
@@ -561,16 +580,18 @@ Education_2 =
                 text = paste0(data1$Primary_10_17, "%"), textposition = "auto") %>%
       add_trace(y = ~Secondary_10_17, name = 'Secondary', marker = list(color = c(colours$reach_grey)),
                 text = paste0(data1$Secondary_10_17, "%"), textposition = "auto") %>%
-      add_trace(y = ~Madrasha_10_17, name = 'Madrasha', marker = list(color = c(colours$reach_green)),
+      add_trace(y = ~Madrasha_10_17, name = 'Madrasha', marker = list(color = c(colours$reach_beige)),
                 text = paste0(data1$Madrasha_10_17, "%"), textposition = "auto") %>%
       add_trace(y = ~Learning_Centre_10_17, name = 'Learning Centre', marker = list(color = c(colours$reach_lt_grey)),
                 text = paste0(data1$Learning_Centre_10_17, "%"), textposition = "auto") %>%
   
       layout(font  = list(family = "Arial Narrow", size = 12),
-             yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
+             yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
              xaxis = list(title = "10-14 Years", categoryorder = "array", categoryarray = ~Groups),
              # legend = list(showlegend = FALSE),
-             barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)')
+             uniformtext=list(minsize=8, mode = 'hide'),
+             barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+      config(displayModeBar = FALSE)
   )
 
 # ---- Education Highest levels (Education 3) ------------------------------
@@ -587,7 +608,7 @@ data2 <- data.frame("Groups" = c("Female", "Male"),
 
 Education_3 = 
   
-  subplot(nrows = 1, shareY = TRUE, titleX = TRUE, 
+  subplot(nrows = 1, shareY = TRUE, titleX = TRUE,
           
           plot_ly(data2, x = ~Groups, type = 'bar', showlegend = FALSE,
                   y = ~None_5_9, name = 'None', marker = list(color = c(colours$reach_red)),
@@ -599,15 +620,17 @@ Education_3 =
                       text = paste0(data2$Primary_5_9, "%"), textposition = "auto") %>% 
             add_trace(y = ~Secondary_5_9, name = 'Secondary', marker = list(color = c(colours$reach_grey)),
                       text = paste0(data2$Secondary_5_9, "%"), textposition = "auto") %>% 
-            add_trace(y = ~Madrasha_5_9, name = 'Madrasha', marker = list(color = c(colours$reach_green)),
+            add_trace(y = ~Madrasha_5_9, name = 'Madrasha', marker = list(color = c(colours$reach_beige)),
                       text = paste0(data2$Madrasha_5_9, "%"), textposition = "auto") %>% 
             add_trace(y = ~Learning_Centre_5_9, name = 'Learning Centre', marker = list(color = c(colours$reach_lt_grey)),
                       text = paste0(data2$Learning_Centre_5_9, "%"), textposition = "auto") %>%
             
-            layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
+            layout(yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
                    xaxis = list(title = "5-9 Years", categoryorder = "array", categoryarray = ~Groups),
                    font  = list(family = "Arial Narrow", size = 12),
-                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)'),
+                   uniformtext=list(minsize=8, mode = 'hide'),
+                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+            config(displayModeBar = FALSE),
           
           plot_ly(data2, x = ~Groups, type = 'bar', showlegend = FALSE,
                   y = ~None_10_17, name = 'None', marker = list(color = c(colours$reach_red)),
@@ -618,15 +641,17 @@ Education_3 =
                       text = paste0(data2$Primary_10_17, "%"), textposition = "auto") %>%
             add_trace(y = ~Secondary_10_17, name = 'Secondary', marker = list(color = c(colours$reach_grey)),
                       text = paste0(data2$Secondary_10_17, "%"), textposition = "auto") %>%
-            add_trace(y = ~Madrasha_10_17, name = 'Madrasha', marker = list(color = c(colours$reach_green)),
+            add_trace(y = ~Madrasha_10_17, name = 'Madrasha', marker = list(color = c(colours$reach_beige)),
                       text = paste0(data2$Madrasha_10_17, "%"), textposition = "auto") %>%
             add_trace(y = ~Learning_Centre_10_17, name = 'Learning Centre', marker = list(color = c(colours$reach_lt_grey)),
                       text = paste0(data2$Learning_Centre_10_17, "%"), textposition = "auto") %>%
             
-            layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
+            layout(yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
                    xaxis = list(title = "10-14 Years", categoryorder = "array", categoryarray = ~Groups),
                    font  = list(family = "Arial Narrow", size = 12),
-                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)')
+                   uniformtext=list(minsize=8, mode = 'hide'),
+                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+            config(displayModeBar = FALSE)
   )
 
 # ---- Education Highest levels (Education 4) ------------------------------
@@ -641,7 +666,7 @@ data3 <- data.frame("Groups" = c("Female", "Male"),
                    "Madrasha_10_17" = c(14,17), "Learning_Centre_10_17" = c(6,7))
 
 Education_4 =
-  subplot(nrows = 1, shareY = TRUE, titleX = TRUE, 
+  subplot(nrows = 1, shareY = TRUE, titleX = TRUE,
           
           plot_ly(data3, x = ~Groups, type = 'bar', showlegend = FALSE,
                   y = ~None_5_9, name = 'None', marker = list(color = c(colours$reach_red)),
@@ -653,15 +678,17 @@ Education_4 =
                       text = paste0(data3$Primary_5_9, "%"), textposition = "auto") %>% 
             add_trace(y = ~Secondary_5_9, name = 'Secondary', marker = list(color = c(colours$reach_grey)),
                       text = paste0(data3$Secondary_5_9, "%"), textposition = "auto") %>% 
-            add_trace(y = ~Madrasha_5_9, name = 'Madrasha', marker = list(color = c(colours$reach_green)),
+            add_trace(y = ~Madrasha_5_9, name = 'Madrasha', marker = list(color = c(colours$reach_beige)),
                       text = paste0(data3$Madrasha_5_9, "%"), textposition = "auto") %>% 
             add_trace(y = ~Learning_Centre_5_9, name = 'Learning Centre', marker = list(color = c(colours$reach_lt_grey)),
                       text = paste0(data3$Learning_Centre_5_9, "%"), textposition = "auto") %>%
             
-            layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
-                   xaxis = list(title = HTML("Persons with<br>Disabilities"), categoryorder = "array", categoryarray = ~Groups),
+            layout(yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
+                   xaxis = list(title = HTML("Children with<br>Disabilities"), categoryorder = "array", categoryarray = ~Groups),
                    font  = list(family = "Arial Narrow", size = 12), 
-                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)'),
+                   uniformtext=list(minsize=8, mode = 'hide'),
+                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+            config(displayModeBar = FALSE),
           
           plot_ly(data3, x = ~Groups, type = 'bar', showlegend = TRUE,
                   y = ~None_10_17, name = 'None', marker = list(color = c(colours$reach_red)),
@@ -672,16 +699,18 @@ Education_4 =
                       text = paste0(data3$Primary_10_17, "%"), textposition = "auto") %>%
             add_trace(y = ~Secondary_10_17, name = 'Secondary', marker = list(color = c(colours$reach_grey)),
                       text = paste0(data3$Secondary_10_17, "%"), textposition = "auto") %>%
-            add_trace(y = ~Madrasha_10_17, name = 'Madrasha', marker = list(color = c(colours$reach_green)),
+            add_trace(y = ~Madrasha_10_17, name = 'Madrasha', marker = list(color = c(colours$reach_beige)),
                       text = paste0(data3$Madrasha_10_17, "%"), textposition = "auto") %>%
             add_trace(y = ~Learning_Centre_10_17, name = 'Learning Centre', marker = list(color = c(colours$reach_lt_grey)),
                       text = paste0(data3$Learning_Centre_10_17, "%"), textposition = "auto") %>%
-            
-            layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,100)),
-                   xaxis = list(title = "Persons without<br>Disabilities", categoryorder = "array", categoryarray = ~Groups),
+
+            layout(yaxis = list(title = '% of Children per Catagory', range = c(0,100)),
+                   xaxis = list(title = "Children without<br>Disabilities", categoryorder = "array", categoryarray = ~Groups),
                    font  = list(family = "Arial Narrow", size = 12),
+                   uniformtext=list(minsize=12, mode = 'hide'),
                    # legend = list(orientation = 'h', y=-100), # , xanchor = "Centre", x = 0.5
-                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)')
+                   barmode = 'stack', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+            config(displayModeBar = FALSE)
   )
 
 
@@ -698,30 +727,32 @@ sector_HH_plot <-
     nrows = 1, shareY = TRUE, titleX = TRUE,
     
     plot_ly(sector_HH_dat, x = ~Groups, type = 'bar', showlegend = FALSE,
-            y = ~preC_child, name = 'Pre-Covid', marker = list(color = c(colours$reach_red)),
+            y = ~preC_child, name = 'Pre-COVID-19 ', marker = list(color = c(colours$reach_red)),
             text = paste0(sector_HH_dat$preC_child, "%"), textposition = "auto") %>%
       
-      add_trace(y = ~postC_child, name = 'Post-Covid', marker = list(color = c(colours$reach_pink)),
+      add_trace(y = ~postC_child, name = 'Post-COVID-19 ', marker = list(color = c(colours$reach_pink)),
                       text = paste0(sector_HH_dat$postC_child, "%"), textposition = "auto") %>%
       
-      layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,60)),
+      layout(yaxis = list(title = '% of Children per Catagory', range = c(0,60)),
                    xaxis = list(title = HTML("At Least One Child"), categoryorder = "array",
                                 categoryarray = ~Groups),
                    font  = list(family = "Arial Narrow", size = 12), 
-                   barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)'),
+                   barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)') %>%
+      config(displayModeBar = FALSE),
     
     plot_ly(sector_HH_dat, x = ~Groups, type = 'bar', showlegend = TRUE,
-            y = ~preC_adult, name = 'Pre-Covid', marker = list(color = c(colours$reach_red)),
+            y = ~preC_adult, name = 'Pre-COVID-19 ', marker = list(color = c(colours$reach_red)),
             text = paste0(sector_HH_dat$preC_adult, "%"), textposition = "auto") %>%
       
-      add_trace(y = ~postC_adult, name = 'Post-Covid', marker = list(color = c(colours$reach_pink)),
+      add_trace(y = ~postC_adult, name = 'Post-COVID-19 ', marker = list(color = c(colours$reach_pink)),
                 text = paste0(sector_HH_dat$postC_adult, "%"), textposition = "auto") %>%
       
-      layout(yaxis = list(title = '% of Persons per Catagory', range = c(0,60)),
+      layout(yaxis = list(title = '% of Children per Catagory', range = c(0,60)),
              xaxis = list(title = HTML("At Least One Adult"), categoryorder = "array",
                           categoryarray = ~Groups),
              font  = list(family = "Arial Narrow", size = 12), 
-             barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)')
+             barmode = 'group', paper_bgcolor = 'rgba(0,0,0,0)') %>% 
+      config(displayModeBar = FALSE)
   )
 
 
@@ -732,36 +763,44 @@ Participation_pie =
   
   # subplot(nrows = 2, 
           
-  plot_ly(width = 0.5, height = 1, frame = T) %>%  # frame = T
+  plot_ly(width = 0.5, height = 1, frame = T) %>% config(displayModeBar = FALSE) %>%  # frame = T
   add_pie(values = c(25, 75),
           hoverinfo = 'text',
-          text = c('</br><b>% of persons with disabilities.</b>', ""),
+          text = c('</br><b>% of persons</br>with disabilities.</b>', ""),
           hole = 0.6, sort = FALSE,
           marker = list(colors = c(colours$reach_red, colours$reach_grey), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0, 0.5), y = c(0.52, 1))
+          domain = list(x = c(0, 0.5), y = c(0.54, 1))
           ) %>% 
   
   add_pie(values = c(30, 70),
           hoverinfo = 'text',
-          text = c('</br><b>% of persons without disabilities.</b>', ""),
+          text = c('</br><b>% of persons</br>without disabilities.</b>', ""),
           # labels = c("a", "b"), 
           hole = 0.6, sort = FALSE,
-          marker = list(colors = c(colours$reach_green, colours$reach_grey), 
+          marker = list(colors = c(colours$reach_red, colours$reach_grey), 
                         line = list(color = '#FFFFFF', width = 1)),
           textinfo = 'none',
           showlegend = FALSE,
-          domain = list(x = c(0, 0.5), y = c(0, 0.48))
+          domain = list(x = c(0, 0.5), y = c(0, 0.46))
           ) %>% 
   
     add_annotations(x = c(0.2,0.2),
-                    y = c(0.83, 0.17),
+                    y = c(0.83, 0.16),
                     text = c("25%", "30%"),
                     showarrow = FALSE,
                     ax = 0, ay = 0,
                     font = list(family = "Arial Narrow", size = 40)) %>%
+  
+  add_annotations(x = c(0.1, 0.1),
+                  y = c(-0.07, 0.50),
+                  text = c(HTML("<b>% of persons without disabilities.</b>"), 
+                           HTML("<b>% of persons with disabilities.</b>")),
+                  showarrow = FALSE,
+                  ax = 0, ay = 0,
+                  font = list(family = "Arial Narrow", size = 15)) %>%
   
   layout(font = list(family = "Arial Narrow", size = 20), paper_bgcolor = 'rgba(0,0,0,0)')
 # xaxis = list(range = c(0,1)), yaxis = list(range = c(0,1))
@@ -778,7 +817,7 @@ Barrier_key_findings = HTML("<ul>
 
     <li><p align='justify'>A significantly higher proportion of persons with disabilities than persons without disabilities reportedly face barriers accessing services. In particular, persons with difficulties in functioning in the self-care or mobility domains as well as female older persons with disabilities reportedly face barriers.</p></li>
 
-    <li><p align='justify'>Overall, more than half the persons with disabilities had reportedly not received any assistive devices in the year prior to data collection despite needing them. This proportion was highest among female older persons with disabilities.</p>
+    <li><p align='justify'>Overall, more than half the persons with disabilities had reportedly not received any assistive devices in the year prior to data collection, despite needing them. This proportion was highest among female older persons with disabilities.</p>
     </ul>")
 
 education_key_findings = HTML("<ul>
@@ -794,18 +833,20 @@ aged 5 to 14 were reported as having been enrolled in TLCs, compared to 82% of g
     </ul>")
 
 means_key_findings = HTML("<ul>
-<li><p align='justify'>The proportions of persons with difficulties functioning in the anxiety or depression domains reportedly having been engaged in the informal sector were at least three times higher than those of persons with difficulties in functioning in other domains, both before the COVID-19 outbreak in March 2020 (pre-COVID) and at the time of data collection (post-COVID). At the same time, findings indicate a greater loss of access to self-reliance activities among persons with disabilities than among persons without disabilities.</p></li>
+<li><p align='justify'>The proportions of persons with difficulties functioning in the anxiety or depression domains reportedly having been engaged in the informal sector were at least three times higher than those of persons with difficulties in functioning in other domains, both before the COVID-19 outbreak in March 2020 (pre-COVID) and at the time of data collection (post-COVID).</p></li>
+
+<li><p align='justify'>At the same time, findings indicate a greater loss of access to self-reliance activities among persons with disabilities than among persons without disabilities.</p></li>
 
 <li><p align='justify'>Slightly higher proportions of households with persons with disabilities reported at least one child as having been engaged in the informal sector both pre- and post-COVID compared to households without persons with disabilities. The proportion of households with persons with disabilities reporting at least one adult as having been engaged in the informal sector was significantly lower than that of households without persons with disabilities.</p></li>
                               
-<li><p align='justify'>Average daily per capita incentives received by households engaged in the informal sector and with persons with disabilities were lower than those of households engaged in the informal sector but without persons with disabilities, in particular post-COVID and among less educated households.</p></li>
+<li><p align='justify'>Among households with members engaged in the informal sector, households with persons with disabilities appeared to receive lower average daily per capita incentives than households without persons with disabilities, particularly among households who had reportedly received less education, and post-COVID.</p></li>
 </ul>")
 
 participation_key_findings = HTML("<ul>
 
 <li><p align='justify'>Participation in meetings or events did not differ significantly between persons with and without disabilities, or across age groups. Participation did differ between male and female individuals, however, with lower reported participation among female individuals.</p></li>
 
-<li><p align='justify'>Most commonly, individuals had reportedly attended NGO meetings, with especially female individuals largely only having attended those types of meetings. Any other types of meetings that were assessed had reportedly been disproportionately attended by male individuals. The overall gender gap was larger among persons without disabilities than among persons with disabilities.</p></li>
+<li><p align='justify'>NGO meetings were the most commonly reported type of meetings/events that had been attended by individuals. For women in particular, it was often reported that NGO meetings were the only types of meetings they had attended. All other types of meetings that were assessed had reportedly been disproportionately attended by male individuals. The gender imbalance was larger among persons without disabilities than among persons with disabilities.</p></li>
 
 <li><p align='justify'>In terms of having been asked for feedback, differences between disability, age and gender groups were small. Only a person's disability and gender appeared to play a small role. Slightly higher proportions of persons without disabilities than persons with disabilities were reportedly asked for feedback. Moreover, slightly larger proportions of female than male individuals among younger age groups, and slightly larger proportions of male than female individuals among older age groups were reportedly asked for feedback.</p></li>
 
@@ -815,9 +856,11 @@ Education_trends = HTML(
 "<ul>
 <li><p align='justify'>Overall, results seem to indicate a trend of persons with disabilities being enrolled into education at a later stage than persons without disabilities, rather than not being enrolled at all, while potentially also taking longer or being slightly less likely to complete their education.</p></li>
 
-<li><p align='justify'>With disability being an evolving concept, limited conclusions can be drawn as to whether pre-COVID barriers to accessing education may to some degree have disproportionately affected children with disabilities, e.g. among younger children and boys. Moreover, older individuals may not have been affected by the same functional difficulties when they were younger. As such, findings related to educational attainments cannot necessarily be related to disability at the time when education was obtained.</p></li>
+<li><p align='justify'>With disability being an evolving concept, limited conclusions can be drawn as to whether pre-COVID-19  barriers to accessing education may to some degree have disproportionately affected children with disabilities, e.g. among younger children and boys. Moreover, older individuals may not have been affected by the same functional difficulties when they were younger. As such, findings related to educational attainments cannot necessarily be related to disability at the time when education was obtained.</p></li>
 
-<li><p align='justify'>Findings can neither necessarily be directly related to access to different levels of education among persons with or without disabilities specifically in the camp context, with older individuals in particular potentially having received their education in Myanmar. Nevertheless, the most notable difference between boys and girls in terms of completed education is that 11% of girls with disabilities were reported as having completed education at learning centres compared to 4% of boys with disabilities. With learning centres being the primary form of education in camps, this difference might be indicative of gender differences among persons with disabilities in particular in the camp context.</p></li>
+<li><p align='justify'>Findings can neither necessarily be directly related to access to different levels of education among persons with or without disabilities specifically in the camp context, with older individuals in particular potentially having received their education in Myanmar.</p></li>
+
+<li><p align='justify'>Nevertheless, the most notable difference between boys and girls in terms of completed education is that 11% of girls with disabilities were reported as having completed education at learning centres compared to 4% of boys with disabilities. With learning centres being the primary form of education in camps, this difference might be indicative of gender differences among persons with disabilities in particular in the camp context.</p></li>
 </ul>")
 
 ################################## UI ##########################################
@@ -865,21 +908,15 @@ ui <- bootstrapPage(
 
           h5(HTML( # Overview Page Box Title:
             sprintf("<span style='color: %s;'><br><strong>CONTEXT</span></strong>", colours$reach_red))),
-          p(HTML("Since August 2017, an estimated 715,000 Rohingya refugees have fled to Cox's Bazar District, Bangladesh, where approximately 860,000 refugees are now residing in 34 camps in Ukhiya and Teknaf Upazilas. In response to the refugee influx, national and international organisations have been delivering humanitarian assistance alongside the government of Bangladesh. In this context, the meaningful and dignified inclusion of individuals across all age groups and persons with disabilities has been incorporated into successive Joint Response Plans in 2019 and 2020. However, while the heightened risk of persons with disabilities and older persons is generally recognised by affected populations and humanitarian actors alike, a lack of data on disability prevalence across camps, as well as the specific requirements, barriers, and preferences of older persons and persons with disabilities complicates evidence-based inclusive programming.")),
+          p(HTML("Since August 2017, an estimated 715,000 Rohingya refugees have fled to Cox's Bazar District, Bangladesh, where approximately 860,000 refugees are now residing in 34 camps in Ukhiya and Teknaf Upazilas. In response to the refugee influx, national and international organisations have been delivering humanitarian assistance alongside the government of Bangladesh. In this context, the meaningful and dignified inclusion of individuals across all age groups and abilities has been incorporated into successive Joint Response Plans in 2019 and 2020. However, while the heightened risk of persons with disabilities and older persons is generally recognised by affected populations and humanitarian actors alike, a lack of data on disability prevalence across camps, as well as the specific requirements, barriers, and preferences of older persons and persons with disabilities complicates evidence-based inclusive programming.")),
 
-          p(HTML("Against this background, REACH, with technical support from the Age and Disability Working Group (ADWG), conducted an Age and Disability Inclusion Needs Assessment across Rohingya refugee populations. The assessment aimed to understand disability prevalence, and to support key actors working in Cox's Bazar, including coordination bodies and technical agencies and actors, to consider the nuanced and specific requirements, access to services and assistance, and involvement of persons with disabilities across all age groups, and older persons living in Rohingya camps, within the response programming. The assessment was coordinated through the ADWG, and implemented with technical contributions from an Age and Disability Task Team (ADTT). The ADTT comprised of the United Nations High Commissioner for Refugees (UNHCR), the International Organization for Migration Needs and Population Monitoring (IOM NPM), the Water, Sanitation and Hygiene (WASH) Sector, and REACH Initiative. Technical contributions were further made by Humanity & Inclusion (HI), Christian Blind Mission, the Centre for Disability in Development, and Prottyashi. REACH is an implimenting partner of HELVETAS Swiss Intercooperation.")),
+          p(HTML("Against this background, REACH, with technical support from the Age and Disability Working Group (ADWG), conducted an Age and Disability Inclusion Needs Assessment across Rohingya refugee populations. The assessment aimed to understand disability prevalence, and to support key actors working in Cox's Bazar, including coordination bodies and technical agencies and actors, to consider the nuanced and specific requirements, access to services and assistance, and involvement of persons with disabilities across all age groups, and older persons living in Rohingya camps, within the response programming. The assessment was coordinated through the ADWG, and implemented with technical contributions from an Age and Disability Task Team (ADTT). The ADTT comprised the United Nations High Commissioner for Refugees (UNHCR), the International Organization for Migration Needs and Population Monitoring (IOM NPM), the Water, Sanitation and Hygiene (WASH) Sector, and REACH Initiative. Technical contributions were further made by Humanity & Inclusion (HI), Christian Blind Mission, the Centre for Disability in Development, and Prottyashi. REACH Initiative is an implimenting partner of HELVETAS Swiss Intercooperation.")),
 
           h5(HTML(sprintf("<span style='color: %s;'><strong>METHODOLOGY</span></strong>", colours$reach_red))),
 
-          p(HTML("The assessment comprised of a quantitative household survey and a qualitative component consisting of focus group discussions (FGDs). The quantitative component was implemented in all 34 camps in Ukhiya and Teknaf Upazilas. A stratified cluster sampling approach was employed, with the camps as strata and households as clusters. Information related to disability prevalence was collected through the Washington Group Questions on all household members in sampled households aged 2 and above. Information on service utilisation, access barriers and enablers, as well as participation and disaster preparedness was collected on sub-samples of those individuals. Information was collected directly from the concerned individuals themselves, if possible. In all other cases, information was collected by proxy from another adult household member. In total, 2,530 household interviews, covering 11,187 individuals aged 2 and above, were carried out between 30 November 2020 and 7 January 2021. Basic descriptive analysis was conducted, complemented by testing for statistically significant differences in outcomes between persons with and without disabilities overall, for different age groups and genders, by types of functional difficulty, and between households with and without persons with disabilities. The achieved level of representativeness of findings differs by the sub-samples addressed for each question. For detailed information on levels of representativeness, as well as challenges and limitations of the assessment, please refer to the report. FGDs were conducted to further contextualise quantitative findings and provide more detailed insights into the specific barriers persons with disabilities and older persons face accessing services, participating in community life and in disaster preparedness, as well as potential solutions. A total of 20 FGDs were conducted with older persons with and without disabilities, adults with disabilities, children with disabilities (aged 11 to 17), and caregivers of children with disabilities, between 12 January and 8 February 2021."))
-          #       "<strong>The MCNA dataset can be downloaded here: </strong><a href=\"https://www.reachresourcecentre.info/country/iraq/cycle/28380/?toip-group=data&toip=dataset-database#cycle-28380\"   target=\"_blank\"><img class='icon' src='noun_Download_2120764.svg' style = 'width:15px; height:15px;margin-top:5px'></a>"
-          #     )
-          #   ),
-          #   p(
-          #     HTML(
-          #       "For MCNA related inquiries, please <a href = \"mailto:anne.flake@reach-initiative.org\">reach out!</a>"
-          #     )
-          #   )
+          p(HTML("The assessment consisted of a quantitative household survey and a qualitative component consisting of focus group discussions (FGDs). The quantitative component was implemented in all 34 camps in Ukhiya and Teknaf Upazilas. A stratified cluster sampling approach was employed, with the camps as strata and households as clusters. Information related to disability prevalence was collected through the Washington Group Questions on all household members in sampled households aged 2 and above. Information on service utilisation, access barriers and enablers, as well as participation and disaster preparedness was collected on sub-samples of those individuals. Information was collected directly from the concerned individuals themselves, if possible. In all other cases, information was collected by proxy from another adult household member. In total, 2,530 household interviews, covering 11,187 individuals aged 2 and above, were carried out between 30 November 2020 and 7 January 2021. Basic descriptive analysis was conducted, complemented by testing for statistically significant differences in outcomes between persons with and without disabilities overall, for different age groups and genders, by types of functional difficulty, and between households with and without persons with disabilities. The achieved level of representativeness of findings differs by the sub-samples addressed for each question. For detailed information on levels of representativeness, as well as challenges and limitations of the assessment, please refer to the Age and Disability Needs Inclusion Assessment report (linked below). FGDs were conducted to further contextualise quantitative findings and provide more detailed insights into the specific barriers persons with disabilities and older persons face accessing services, participating in community life and in disaster preparedness, as well as potential solutions. A total of 20 FGDs were conducted with older persons with and without disabilities, adults with disabilities, children with disabilities (aged 11 to 17), and caregivers of children with disabilities, between 12 January and 8 February 2021.")),
+          
+          p(HTML("<strong>Outputs from the Age and Disability Needs Inclusion Assessment can be downloaded here: </strong><a href=\"https://www.reachresourcecentre.info/country/bangladesh/cycle/31656/#cycle-31656\"   target=\"_blank\"><img class='icon' src='noun_Download_2120764.svg' style = 'width:15px; height:15px;margin-top:5px'></a>"))
         ),
 
 
@@ -951,7 +988,7 @@ tabPanel(
 
                    # New paragraph of key findings:
                    p(Barrier_key_findings),
-                   HTML("<b>% persons facing difficulty moving around camp and within shelters</b>"),
+                   HTML("<b>% of persons facing difficulty moving around camp and within shelters</b><br><br>"),
 
                    Barrier_Mobility_pie),
 
@@ -965,9 +1002,17 @@ tabPanel(
                     width = 600,
                     height = 940,
                     h5(HTML(sprintf("<span style='color: %s;'><br><strong>Difficultly Moving Around Within Shelters</span></strong>", colours$reach_red))),
-                   HTML("<br>TOP: % of persons reportedly facing difficulties moving inside shelters without support from others.<br>
-                        BOTTOM: % of persons reportedly facing difficulties moving inside shelters without support from others, by reason."),
-                    plotlyOutput("barrier_1", height = "800px")),
+                   HTML("<br><b>% of persons reportedly facing difficulties moving inside shelters without support from others.</b>"),
+                   plotly_bar_graph_dual_axis_single_trace(
+                      plot_height = 200, plot_width = 550,
+                      data_grid_left = navigating_inside_shelters, left_col = 9,
+                      data_grid_right = navigating_inside_shelters_pwd, right_col = 9,
+                      left_title = "Persons without Disabilities",
+                      right_title = "Persons with Disabilities",
+                      data_label = "Persons with disabilities"),
+                   
+                   HTML("<br><b>% of persons reportedly facing difficulties moving inside shelters without support from others, by reason.</b></b>"),
+                   plotlyOutput("barrier_1", height = "600px")),
 
                   absolutePanel(
                     id = "red_box",
@@ -980,9 +1025,18 @@ tabPanel(
                     height = 940,
 
                     h5(HTML(sprintf("<span style='color: %s;'><br><strong>Difficultly Moving Around the Camps</span></strong>", colours$reach_red))),
-                    HTML("<br>TOP: % of persons with disabilities moving around camps, by age group.<br>
-                         BOTTOM: % of persons with disabilities aged 15 and above facing difficulties moving around camps, by reason."),
-                    plotlyOutput("barrier_2", height = "800px"))),
+                    HTML("<br><b>% of persons with disabilities moving around camps, by age group.</b>"),
+                    plotly_bar_graph_dual_axis_single_trace(
+                      plot_height = 200, plot_width = 550,
+                      data_grid_left = navigating_camps_reason,
+                      data_grid_right = navigating_camps_reason_pwd,
+                      right_col <- left_col <- grep(x = colnames(navigating_camps_reason), pattern = "yes"),
+                      left_title = "Persons without Disabilities",
+                      right_title = "Persons with Disabilities",
+                      data_label = "Persons with disabilities"),
+                    
+                    HTML("<br><b>% of persons with disabilities aged 15 and above facing difficulties moving around camps, by reason.</b>"),
+                    plotlyOutput("barrier_2", height = "600px"))),
 
 # ---- Self-Care and WASH Infrastructure ----------------------------------
 
@@ -1005,7 +1059,7 @@ tabPanel(
 
                    # New paragraph of key findings:
                    p(Barrier_key_findings),
-                   HTML("<br><b>% persons facing difficulty bathing, using latrines, and accessing services.</b>"),
+                   HTML("<br><b>% of persons facing difficulty bathing, using latrines, and accessing services.</b></br></br>"),
 
                    Barrier_WASH_pie),
 
@@ -1017,7 +1071,7 @@ tabPanel(
                    width = 500,
                    h5(HTML(sprintf("<span style='color: %s;'><br><strong>Reported Challenges when Bathing</span></strong>",
                                    colours$reach_red))),
-                   HTML("% of persons with disabilities aged 2 and above reportedly unable to shower/bathe without support from others, % reporting reasons (top 4)."),
+                   HTML("<b>% of persons with disabilities aged 2 and above reportedly unable to shower/bathe without support from others, % reporting reasons (top 4).</b>"),
                     plotlyOutput("WASH_1")),
 
                  absolutePanel(
@@ -1029,7 +1083,7 @@ tabPanel(
                    width = 500,
                    h5(HTML(sprintf("<span style='color: %s;'><br><strong>Using Latrines</span></strong>",
                                     colours$reach_red))),
-                   HTML("% of persons with disabilities aged 2 and above reportedly unable to use latrines/go to the toilet without support from others, % reporting reasons (top 4)."),
+                   HTML("<b>% of persons with disabilities aged 2 and above reportedly unable to use latrines/go to the toilet without support from others, % reporting reasons (top 4).</b>"),
                    plotlyOutput("WASH_2")),
 
                  absolutePanel(
@@ -1040,7 +1094,7 @@ tabPanel(
                    width = 1010, height = 450,
                    h5(HTML(sprintf("<span style='color: %s;'><br><strong>Public and Private Facilities</span></strong>",
                                    colours$reach_red))),
-                   HTML("% of persons with and without disabilities aged 15 and above reportedly having used different WASH services in the month prior to data collection."),
+                   HTML("<b>% of persons with and without disabilities aged 15 and above reportedly having used different WASH services in the month prior to data collection.</b>"),
                    plotlyOutput("WASH_3")
                    )# Ab'panel
                  ), # Tab panel
@@ -1083,7 +1137,7 @@ tabPanel(
                    height = 470,
                    h5(HTML(sprintf("<span style='color: %s;'><br><strong>Devices Received</span></strong>",
                                    colours$reach_red))),
-                   HTML("% of persons with disabilities aged 15 and above and persons without disabilities over the the age of 60 reportedly having received assistive devices in the year prior to data collection, by age group."),
+                   HTML("<b>% of persons with disabilities aged 15 and above and persons without disabilities over the the age of 60 reportedly having received assistive devices in the year prior to data collection, by age group.</b>"),
                    # plotly_bar_graph(data_grid_left = Assistive_devices,
                    #                  left_title = "Persons without Disabilities",
                    #                  data_grid_right = Assistive_devices_PWD,
@@ -1103,7 +1157,7 @@ tabPanel(
                    height = 470,
                    h5(HTML(sprintf("<span style='color: %s;'><br><strong>Devices not Received</span></strong>",
                                    colours$reach_red))),
-                   HTML("% of persons with disabilities aged 2 and above and persons without disabilities over the the age of 60 reportedly not having received assistive devices despite needing them in the year prior to data collection, by age group and gender."),
+                   HTML("<b>% of persons with disabilities aged 2 and above and persons without disabilities over the the age of 60 reportedly not having received assistive devices despite needing them in the year prior to data collection, by age group and gender.</b>"),
                    plotlyOutput("Devices_2")
                  )# Ab'panel
         ) # Tab panel
@@ -1142,7 +1196,7 @@ absolutePanel(
   width = 500, height = 500,
   h5(HTML(sprintf("<span style='color: %s;'><br><strong>Highest Level of Education by Age Group and Gender</span></strong>",
                   colours$reach_red))),
-  HTML("% of children aged 5 to 17 by reported highest level of education, by age group and gender."),
+  HTML("<b>% of children aged 5 to 17 by reported highest level of education, by age group and gender.</b>"),
   Education_3),
   # plotlyOutput("Education_2_link", height = "800px")),
 
@@ -1152,7 +1206,7 @@ absolutePanel(
   width = 520, height = 600,
   h5(HTML(sprintf("<span style='color: %s;'><br><strong>Highest Level of Education by Age Group</span></strong>",
                   colours$reach_red))),
-  HTML("% of children with and without disabilities aged 5 to 17 by reported highest level of education,</br>by age group."),
+  HTML("<b>% of children with and without disabilities aged 5 to 17 by reported highest level of education, by age group.</b>"),
   Education_2),
 
 absolutePanel(
@@ -1161,7 +1215,7 @@ absolutePanel(
   width = 640, height = 500,
   h5(HTML(sprintf("<span style='color: %s;'><br><strong>Highest Level of Education by Gender</span></strong>",
                   colours$reach_red))),
-  HTML("% of children with and without disabilities aged 5 to 17 by reported highest level of<br>education, by gender."),
+  HTML("<b>% of children with and without disabilities aged 5 to 17 by reported highest level of<br>education, by gender.</b>"),
   Education_4),
 
 absolutePanel(
@@ -1203,19 +1257,22 @@ absolutePanel(
   id = "clear_clear_box", top = 60,
   left = 420, right = "auto",
   width = 600, height = 480,
-  # h5(HTML(sprintf("<span style='color: %s;'><br><strong>Engagement in the Informal Sector</span></strong>", colours$reach_red))),
-  HTML("<br>% of <b>persons</b> with and without disabilities aged 4 and above reportedly having been engaged in the informal sector pre-COVID and post-COVID, overall and by domain of disability."),
-  plotly_bar_graph(
-    data_grid_left = Sector[1,], data_grid_right = Sector[2,],
-    left_title = "Pre-Covid", right_title = "Post-Covid",
-    x_range = c(0, 0.4), bar_colours = colours$reach_grey)),
+  HTML("<br><b>% of households with and without persons with disabilities reporting at lease ne child or at least one adult as having been engaged in the informal sector pre-COVID and post-COVID.</b>"),
+  sector_HH_plot), # absolutePanel
+
 
 absolutePanel(
   id = "clear_clear_box", top = 60,
   left = 1020, right = "auto",
   width = 600, height = 480,
-  HTML("<br>% of <b>households</b> with and without persons with disabilities reporting at elast ne child or at least one adult as having been engaged in the informal sector pre-COVID and post-COVID."),
-  sector_HH_plot), # absolutePanel
+  # h5(HTML(sprintf("<span style='color: %s;'><br><strong>Engagement in the Informal Sector</span></strong>", colours$reach_red))),
+  HTML("<br><b>% of <b>persons</b> with and without disabilities aged 4 and above reportedly having been engaged in the informal sector pre-COVID and post-COVID, overall and by domain of disability.</b>"),
+  plotly_bar_graph(
+    data_grid_left = Sector[1,], data_grid_right = Sector[2,],
+    left_title = "Pre-COVID-19 ", right_title = "Post-COVID-19 ",
+    x_range = c(0, 0.4), bar_colours = colours$reach_grey)),
+
+
 
 
 # ---- Participation ------------------------------------------------------
@@ -1241,7 +1298,7 @@ absolutePanel(
   left = 360, right = "auto",
   width = 310,# height = 500,
   # Title:
-  HTML("<br><b><center>Persons with and without disabilities aged 15+ who reportedly attended community meetings/events in the month prior to data collection.</center></b>")),
+  HTML("<br><b><center>% of persons aged 15+ who reportedly attended community meetings/events in the month prior to data collection.</center></b>")),
 
 absolutePanel(
   id = "clear_clear_box", top = 600,
@@ -1253,10 +1310,12 @@ absolutePanel(
   id = "clear_clear_box", top = 540,
   left = 680, right = "auto",
   width = 560, height = 380,
-  HTML("<br>% of persons with and without disabilities aged 15 and abovereportedly having attended community meetings/events in the month prior to data collection, by type of meeting."),
+  HTML("<br><b>% of persons with and without disabilities aged 15 and above reportedly having attended community meetings/events in the month prior to data collection, by type of meeting.</b>"),
   
   plotly_bar_graph_dual_axis_single_trace(
-    data_grid_left = Participation_trans, data_grid_right = Participation_trans,
+    plot_height = 420, plot_width = 520,
+    data_grid_left = Participation_trans, 
+    data_grid_right = Participation_trans,
     left_col = 1, right_col = 2,
     left_title = "Persons without<br>Disabilities",
     right_title = "Persons with<br>Disabilities",
@@ -1271,7 +1330,13 @@ absolutePanel(
 absolutePanel(
   id = "red_box", top = 540,
   left = 1250, right = "auto",
-  width = 380, height = 500,
+  width = 380, height = 500),
+
+absolutePanel(
+  
+  id = "clear_clear_box", top = 540,
+  left = 1250, right = "auto",
+  width = 350, height = 500,
   # Title:
   h4(HTML(sprintf("<span style='color: %s;'><br><strong>Disaster Preparedness</span></strong>",
                   colours$reach_grey))),
@@ -1316,11 +1381,19 @@ output$mapOverview <- renderLeaflet({
   # ---- Map Pop ups --------------------------------------------------------
 
   # Set the labels for the map:
-  labels = c(summary(coverage_value)[c(2,3,5,6)], NA)
+  labels = summary(coverage_value)
+  labels_lower_bounds = labels[c(1,2,4,5)]
+  labels = labels[c(2,3,5,6)]
+  # labels = c(summary(coverage_value)[c(2,3,5,6)], NA)
+  
   if(select_group == "hh_size"){
     labels = format(round(x = labels, digits = 1), nsmall = 1)
-  } else {labels = round(x = labels, digits = 0)}
-
+    labels_lower_bounds = format(round(x = labels_lower_bounds, digits = 1), nsmall = 1)
+  } else {
+    labels = round(x = labels, digits = 0)
+    labels_lower_bounds = round(x = labels_lower_bounds, digits = 0)
+  }
+  
   # This is making the html popups for the map:
   # Each of the arguments takes the place of a %s in the quotes
   coverage_tooltip <- sprintf(
@@ -1343,7 +1416,7 @@ output$mapOverview <- renderLeaflet({
   # ---- Render the map -----------------------------------------------------
 
   # Set up the basic arguments:
-  irq_map <- leaflet(
+  bgd_map <- leaflet(
     options = leafletOptions(
       zoomControl = FALSE,
       doubleClickZoom = TRUE,
@@ -1397,7 +1470,7 @@ output$mapOverview <- renderLeaflet({
     ) %>%
 
     # Add custom legend and title:
-    addLegendCustom(colors = color_vector, labels = labels, title = input$coverage) %>%
+    addLegendCustom(colors = color_vector, labels_lower_bounds = labels_lower_bounds, labels = labels, title = input$coverage) %>%
     # addLegend(title = input$coverage) %>%
 
     # Add scale
@@ -1419,21 +1492,21 @@ output$barrier_1 <- renderPlotly({
 
   col_index = c(1:5,8,7)
 
-  subplot(shareX = TRUE, nrows = 2, heights = c(0.25,0.75),
-
-          plotly_bar_graph_dual_axis_single_trace(
-            data_grid_left = navigating_inside_shelters,
-            left_col = 9,
-            data_grid_right = navigating_inside_shelters_pwd,
-            right_col = 9, #grep(x = colnames(navigating_inside_shelters), pattern = "yes")],
-            left_title = "Persons without Disabilities",
-            right_title = "Persons with Disabilities",
-            data_label = "Persons with disabilities"),
+  # subplot(shareX = FALSE, nrows = 2, heights = c(0.25,0.75), titleX = TRUE,
+  # 
+  #         plotly_bar_graph_dual_axis_single_trace(
+  #           data_grid_left = navigating_inside_shelters,
+  #           left_col = 9,
+  #           data_grid_right = navigating_inside_shelters_pwd,
+  #           right_col = 9, #grep(x = colnames(navigating_inside_shelters), pattern = "yes")],
+  #           left_title = "Persons without Disabilities",
+  #           right_title = "Persons with Disabilities",
+  #           data_label = "Persons with disabilities"),
 
           plotly_bar_graph(data_grid_left = navigating_inside_shelters[,col_index],
                            data_grid_right = navigating_inside_shelters_pwd[,col_index],
                            left_title = "Persons without Disabilities",
-                           right_title = "Persons with Disabilities")
+                           right_title = "Persons with Disabilities"#)
 
   )
 
@@ -1443,21 +1516,22 @@ output$barrier_2 <- renderPlotly({
 
   col_index = c(1:6,8,7)
 
-  subplot(shareX = TRUE, nrows = 2, heights = c(0.25,0.75),
+  # subplot(shareX = TRUE, nrows = 2, heights = c(0.25,0.75),
 
-          plotly_bar_graph_dual_axis_single_trace(
-            data_grid_left = navigating_camps_reason,
-            data_grid_right = navigating_camps_reason_pwd,
-            right_col <- left_col <- grep(x = colnames(navigating_camps_reason), pattern = "yes"),
-            left_title = "Persons without Disabilities",
-            right_title = "Persons with Disabilities",
-            data_label = "Persons with disabilities"),
+          # plotly_bar_graph_dual_axis_single_trace(
+          #   plot_height = 200, plot_width = 550,
+          #   data_grid_left = navigating_camps_reason,
+          #   data_grid_right = navigating_camps_reason_pwd,
+          #   right_col <- left_col <- grep(x = colnames(navigating_camps_reason), pattern = "yes"),
+          #   left_title = "Persons without Disabilities",
+          #   right_title = "Persons with Disabilities",
+          #   data_label = "Persons with disabilities"),
 
           plotly_bar_graph(data_grid_left = navigating_camps_reason[,col_index],
                            data_grid_right = navigating_camps_reason_pwd[,col_index],
                            left_title = "Persons without Disabilities",
                            right_title = "Persons with Disabilities")
-  )
+  # )
 })
 
 
@@ -1483,7 +1557,7 @@ output$WASH_3 <- renderPlotly({
                    data_grid_right = facilities_private,
                    left_title = "Public Facilities",
                    right_title = "Private Facilities",
-                   bar_colours = c(colours$reach_green, colours$reach_red))
+                   bar_colours = c(colours$reach_beige, colours$reach_red))
 })
 
 
