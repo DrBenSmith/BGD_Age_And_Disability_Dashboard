@@ -108,7 +108,10 @@ addLegendCustom <- function(map, colors, labels, labels_lower_bounds, opacity = 
   # THIS ASSUMES THAT THE FINAL COLOUR represents NULL/NA
 
   legend_colors <- paste0(colors, "; width:20px; top: 0; height:20px; border:1px solid  white; text-align: center; border-radius:0%")
-  legend_labels <- paste0("<div style='display: inline-block; text-align: center; height:20px; line-height: 20px;'>",  c(paste0(labels_lower_bounds, " - ", labels), "NA"), "</div>")
+  
+  legend_labels <- paste0("<div style='display: inline-block; text-align: center; height:20px; line-height: 20px;'>",
+                          c(paste0(labels_lower_bounds, " - ", labels), "No Coverage"),
+                          "</div>")
 
   return(addLegend(map, colors = legend_colors, labels = legend_labels, 
                    opacity = opacity, position = "bottomright", title = title))
@@ -1379,19 +1382,24 @@ output$mapOverview <- renderLeaflet({
 
 
   # ---- Map Pop ups --------------------------------------------------------
-
   # Set the labels for the map:
   labels = summary(coverage_value)
-  labels_lower_bounds = labels[c(1,2,4,5)]
+  labels_lower_bounds = labels[c(1,2,3,5)]
   labels = labels[c(2,3,5,6)]
-  # labels = c(summary(coverage_value)[c(2,3,5,6)], NA)
   
   if(select_group == "hh_size"){
-    labels = format(round(x = labels, digits = 1), nsmall = 1)
-    labels_lower_bounds = format(round(x = labels_lower_bounds, digits = 1), nsmall = 1)
+    labels = round(x = labels, digits = 1)
+    labels_lower_bounds = round(x = labels_lower_bounds, digits = 1)
+    # Edit the lower bounds so that the labels are exclusive:
+    labels_lower_bounds[2:4] = labels_lower_bounds[2:4]+0.1
+    # Edit the labels so that there is always 1 decimal place:
+    labels = format(labels, nsmall = 1)
+    labels_lower_bounds = format(labels_lower_bounds, nsmall = 1)
   } else {
     labels = round(x = labels, digits = 0)
     labels_lower_bounds = round(x = labels_lower_bounds, digits = 0)
+    # Edit the lower bounds so that the labels are exclusive:
+    labels_lower_bounds[2:4] = labels_lower_bounds[2:4]+1
   }
   
   # This is making the html popups for the map:
@@ -1470,7 +1478,10 @@ output$mapOverview <- renderLeaflet({
     ) %>%
 
     # Add custom legend and title:
-    addLegendCustom(colors = color_vector, labels_lower_bounds = labels_lower_bounds, labels = labels, title = input$coverage) %>%
+    addLegendCustom(colors = color_vector, 
+                    labels_lower_bounds = labels_lower_bounds, 
+                    labels = labels, 
+                    title = input$coverage) %>%
     # addLegend(title = input$coverage) %>%
 
     # Add scale
