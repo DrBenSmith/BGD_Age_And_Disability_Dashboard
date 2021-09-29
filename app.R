@@ -5,7 +5,6 @@
 # #########################################################################
 
 # setwd("C:/Users/Ben SMITH/SynDrive/REACH_BGD/Resources/Templates/R Scripts/irq_mcna_dashboard/irq_mcna_dashboard")
-# TODO - make sure that colours match between series on differnt plots.
 # This was showing the error:
   # R Error: object 'faststack' is not exported by 'namespace:fastmap'
   # This was fixed by using: install.packages('fastmap')
@@ -17,32 +16,17 @@
 
 # spatial data
   library(sf)                     # vector data tools
-  # library(lwgeom)               # install.packages("lwgeom")
   library(raster)                 # raster data tools
   library(leaflet)                # plot interactive maps
-  # library(geojsonio)              # deal with geojson layers # install.packages("geojsonio")
-  # library(spatialEco)             # calculate zonal statistics # install.packages("spatialEco")
-  # library(rmapshaper)             # tools for simplifying polygons # install.packages("rmapshaper")
-  # library(HatchedPolygons)      # hatched polygon patterns with Leaflet
 
 # additional packages
   library(tidyverse)              # data wrangling packages # install.packages("
   library(shiny)                  # App building tools # install.packages("
-  # library(shinydashboard)         # calculate zonal statistics # install.packages("shinydashboard")
-  # library(shinyjs)                # javascript plugin for Shiny # install.packages("shinyjs")
-  # library(widgetframe)            # app widgets # install.packages("widgetframe")
   library(rsconnect)              # connect to online shiny server # install.packages("
   library(highcharter)            # interactive graph packages # install.packages("highcharter")
-  # library(readxl)                 # import excel files
-  # library(lubridate)              # smooth date manipulation
-  # library(htmltools)              # html scripting for R # install.packages("
-  # library(expss)                  # vlookup for R # install.packages("expss")
-  # library(htmlwidgets)
   library(openxlsx)               # Reading in data
   library(plotly)                 # Nice plots
   
-
-
 # Read in the styling/function for HTML Chars:
 # source("Chart Setup Function.R") # chart_funct = ...
 
@@ -911,13 +895,15 @@ ui <- bootstrapPage(
 
           h5(HTML( # Overview Page Box Title:
             sprintf("<span style='color: %s;'><br><strong>CONTEXT</span></strong>", colours$reach_red))),
-          p(HTML("Since August 2017, an estimated 715,000 Rohingya refugees have fled to Cox's Bazar District, Bangladesh, where approximately 860,000 refugees are now residing in 34 camps in Ukhiya and Teknaf Upazilas. In response to the refugee influx, national and international organisations have been delivering humanitarian assistance alongside the government of Bangladesh. In this context, the meaningful and dignified inclusion of individuals across all age groups and abilities has been incorporated into successive Joint Response Plans in 2019 and 2020. However, while the heightened risk of persons with disabilities and older persons is generally recognised by affected populations and humanitarian actors alike, a lack of data on disability prevalence across camps, as well as the specific requirements, barriers, and preferences of older persons and persons with disabilities complicates evidence-based inclusive programming.")),
+          p(HTML("Since August 2017, an estimated 715,000 Rohingya refugees have fled to Cox's Bazar District, Bangladesh. At the time of assessment, approximately 860,000 refugees were residing in 34 camps in Ukhiya and Teknaf Upazilas (See <a href='https://data2.unhcr.org/en/situations/myanmar_refugees'>UNHCR Operational Portal</a>). In response to the refugee influx, national and international organisations have been delivering humanitarian assistance alongside the government of Bangladesh. In this context, the meaningful and dignified inclusion of individuals across all age groups and abilities has been incorporated into successive Joint Response Plans in 2019 and 2020. However, while the heightened risk of persons with disabilities and older persons is generally recognised by affected populations and humanitarian actors alike, a lack of data on disability prevalence across camps, as well as the specific requirements, barriers, and preferences of older persons and persons with disabilities complicates evidence-based inclusive programming.")),
 
           p(HTML("Against this background, REACH, with technical support from the Age and Disability Working Group (ADWG), conducted an Age and Disability Inclusion Needs Assessment across Rohingya refugee populations. The assessment aimed to understand disability prevalence, and to support key actors working in Cox's Bazar, including coordination bodies and technical agencies and actors, to consider the nuanced and specific requirements, access to services and assistance, and involvement of persons with disabilities across all age groups, and older persons living in Rohingya camps, within the response programming. The assessment was coordinated through the ADWG, and implemented with technical contributions from an Age and Disability Task Team (ADTT). The ADTT comprised the United Nations High Commissioner for Refugees (UNHCR), the International Organization for Migration Needs and Population Monitoring (IOM NPM), the Water, Sanitation and Hygiene (WASH) Sector, and REACH Initiative. Technical contributions were further made by Humanity & Inclusion (HI), Christian Blind Mission, the Centre for Disability in Development, and Prottyashi. REACH Initiative is an implimenting partner of HELVETAS Swiss Intercooperation.")),
 
           h5(HTML(sprintf("<span style='color: %s;'><strong>METHODOLOGY</span></strong>", colours$reach_red))),
 
           p(HTML("The assessment consisted of a quantitative household survey and a qualitative component consisting of focus group discussions (FGDs). The quantitative component was implemented in all 34 camps in Ukhiya and Teknaf Upazilas. A stratified cluster sampling approach was employed, with the camps as strata and households as clusters. Information related to disability prevalence was collected through the Washington Group Questions on all household members in sampled households aged 2 and above. Information on service utilisation, access barriers and enablers, as well as participation and disaster preparedness was collected on sub-samples of those individuals. Information was collected directly from the concerned individuals themselves, if possible. In all other cases, information was collected by proxy from another adult household member. In total, 2,530 household interviews, covering 11,187 individuals aged 2 and above, were carried out between 30 November 2020 and 7 January 2021. Basic descriptive analysis was conducted, complemented by testing for statistically significant differences in outcomes between persons with and without disabilities overall, for different age groups and genders, by types of functional difficulty, and between households with and without persons with disabilities. The achieved level of representativeness of findings differs by the sub-samples addressed for each question. For detailed information on levels of representativeness, as well as challenges and limitations of the assessment, please refer to the Age and Disability Needs Inclusion Assessment report (linked below). FGDs were conducted to further contextualise quantitative findings and provide more detailed insights into the specific barriers persons with disabilities and older persons face accessing services, participating in community life and in disaster preparedness, as well as potential solutions. A total of 20 FGDs were conducted with older persons with and without disabilities, adults with disabilities, children with disabilities (aged 11 to 17), and caregivers of children with disabilities, between 12 January and 8 February 2021.")),
+          
+          p(HTML("For more in-depth, granular findings, including p-values, margins of error and sample sizes, please visit the assessment outputs.")),
           
           p(HTML("<strong>Outputs from the Age and Disability Needs Inclusion Assessment can be downloaded here: </strong><a href=\"https://www.reachresourcecentre.info/country/bangladesh/cycle/31656/#cycle-31656\"   target=\"_blank\"><img class='icon' src='noun_Download_2120764.svg' style = 'width:15px; height:15px;margin-top:5px'></a>"))
         ),
@@ -1541,7 +1527,8 @@ output$barrier_2 <- renderPlotly({
           plotly_bar_graph(data_grid_left = navigating_camps_reason[,col_index],
                            data_grid_right = navigating_camps_reason_pwd[,col_index],
                            left_title = "Persons without Disabilities",
-                           right_title = "Persons with Disabilities")
+                           right_title = "Persons with Disabilities",
+                           bar_colours = c("#58585A", "#f5a6a7", "#D1D3D4"))
   # )
 })
 
