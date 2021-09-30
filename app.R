@@ -795,6 +795,33 @@ Participation_pie =
 
 # Write some output text for key findings ---------------------------------
 
+context = p(HTML("<br>
+                 Since August 2017, an estimated 715,000 Rohingya refugees have fled to Cox's Bazar District, Bangladesh. At the time of assessment, approximately 860,000 refugees were residing in 34 camps in Ukhiya and Teknaf Upazilas (see <a href='https://data2.unhcr.org/en/situations/myanmar_refugees'>UNHCR Operational Portal</a>). In response to the refugee influx, national and international organisations have been delivering humanitarian assistance alongside the government of Bangladesh. In this context, the meaningful and dignified inclusion of individuals across all age groups and abilities has been incorporated into successive Joint Response Plans in 2019 and 2020. However, while the heightened risk of persons with disabilities and older persons is generally recognised by affected populations and humanitarian actors alike, a lack of data on disability prevalence across camps, as well as the specific requirements, barriers, and preferences of older persons and persons with disabilities complicates evidence-based inclusive programming.<br> 
+                 <br>
+                 Against this background, REACH, with technical support from the Age and Disability Working Group (ADWG), conducted an Age and Disability Inclusion Needs Assessment across Rohingya refugee populations. The assessment aimed to understand disability prevalence, and to support key actors working in Cox's Bazar, including coordination bodies and technical agencies and actors, to consider the nuanced and specific requirements, access to services and assistance, and involvement of persons with disabilities across all age groups, and older persons living in Rohingya camps, within the response programming. The assessment was coordinated through the ADWG, and implemented with technical contributions from an Age and Disability Task Team (ADTT). The ADTT comprised the United Nations High Commissioner for Refugees (UNHCR), the International Organization for Migration Needs and Population Monitoring (IOM NPM), the Water, Sanitation and Hygiene (WASH) Sector, and REACH Initiative. Technical contributions were further made by Humanity & Inclusion (HI), Christian Blind Mission, the Centre for Disability in Development, and Prottyashi. REACH Initiative is an implimenting partner of HELVETAS Swiss Intercooperation.<br>"))
+
+
+methods_text = p(HTML("<br>
+The assessment consisted of a quantitative household survey and a qualitative component consisting of focus group discussions (FGDs). The quantitative component was implemented in all 34 camps in Ukhiya and Teknaf Upazilas. A stratified cluster sampling approach was employed, with the camps as strata and households as clusters. Information related to disability prevalence was collected through the Washington Group Questions on all household members in sampled households aged 2 and above. Information on service utilisation, access barriers and enablers, as well as participation and disaster preparedness was collected on sub-samples of those individuals. Information was collected directly from the concerned individuals themselves, if possible. In all other cases, information was collected by proxy from another adult household member. In total, 2,530 household interviews, covering 11,187 individuals aged 2 and above, were carried out between 30 November 2020 and 7 January 2021.
+<br><br>
+Basic descriptive analysis was conducted, complemented by testing for statistically significant differences in outcomes between persons with and without disabilities overall, for different age groups and genders, by types of functional difficulty, and between households with and without persons with disabilities. The achieved level of representativeness of findings differs by the sub-samples addressed for each question.
+<br><br>
+For detailed information on levels of representativeness, as well as challenges and limitations of the assessment, please refer to the Age and Disability Needs Inclusion Assessment report (linked below). FGDs were conducted to further contextualise quantitative findings and provide more detailed insights into the specific barriers persons with disabilities and older persons face accessing services, participating in community life and in disaster preparedness, as well as potential solutions. A total of 20 FGDs were conducted with older persons with and without disabilities, adults with disabilities, children with disabilities (aged 11 to 17), and caregivers of children with disabilities, between 12 January and 8 February 2021.
+<br><br>
+For more in-depth, granular findings, including p-values, margins of error and sample sizes, please visit the assessment outputs.
+<br><br>
+<strong>Outputs from the Age and Disability Needs Inclusion Assessment can be downloaded here: </strong><a href=\"https://www.reachresourcecentre.info/country/bangladesh/cycle/31656/#cycle-31656\"   target=\"_blank\"><img class='icon' src='noun_Download_2120764.svg' style = 'width:15px; height:15px;margin-top:5px'></a>"))
+
+prevolence = HTML("<br><ul>
+    <li><p align='justify'>Overall, the prevalence of persons with disabilities (aged 2 and above) was 12%. There was no difference in disability prevalence between male and female individuals. However, findings suggest an increasing disability prevalence with increasing age. Estimated disability prevalence further ranged from 6% to 19% depending on the camp.</p></li>
+    
+    <li><p align='justify'>Among adults, 20% of individuals were identified as persons with disabilities, with the highest proportions of individuals reportedly having difficulties in functioning6 in the anxiety domain, followed by the depression and the mobility domains. However, among older persons (aged 60 and above), who were found to comprise 3.2% of female individuals and 4.9% of male individuals in the population, more than half were identified as persons with disabilities, compared to 17% of adults aged 18 to 59.</p></li>
+    
+    <li><p align='justify'>Among the 5 to 17 year-olds, 3% of individuals were identified as persons with disabilities. The highest proportion of individuals reportedly had difficulties in functioning in the anxiety domain, followed by the depression domain.</p></li>
+    
+    <li><p align='justify'>Among the 2 to 4 year-olds, overall 2% of individuals were identified as persons with disabilities. The highest proportion of individuals reportedly had difficulties in functioning in the learning domain. In all other domains, less than 2% of male or female individuals were reported as having difficulties in functioning.</p></li>
+                  </ul>")
+                            
 Barrier_key_findings = HTML("<ul>
     <li><p align='justify'>Barriers related to mobility in shelters or around camps were reported for 52% and 76% of persons with disabilities, respectively. In particular, persons with difficulties in functioning in the self-care or mobility domains reportedly face barriers moving both inside shelters and around camps. In addition, persons with difficulties in functioning in the upper body movement or vision domains reportedly particularly face barriers moving inside shelters. Mobility-related barriers were also increasingly reported with increasing age.</p></li>
 
@@ -885,30 +912,50 @@ ui <- bootstrapPage(
 
 
         absolutePanel(
-          id = "red_box",
+          id = "clear_box",# style = "position: absolute;",
           class = "panel panel-default",
-          draggable = F,
+          draggable = F, #fixed = TRUE,
           top = 60,
           left = 10,
           right = "auto",
-          width = 800,
-
-          h5(HTML( # Overview Page Box Title:
-            sprintf("<span style='color: %s;'><br><strong>CONTEXT</span></strong>", colours$reach_red))),
-          p(HTML("Since August 2017, an estimated 715,000 Rohingya refugees have fled to Cox's Bazar District, Bangladesh. At the time of assessment, approximately 860,000 refugees were residing in 34 camps in Ukhiya and Teknaf Upazilas (See <a href='https://data2.unhcr.org/en/situations/myanmar_refugees'>UNHCR Operational Portal</a>). In response to the refugee influx, national and international organisations have been delivering humanitarian assistance alongside the government of Bangladesh. In this context, the meaningful and dignified inclusion of individuals across all age groups and abilities has been incorporated into successive Joint Response Plans in 2019 and 2020. However, while the heightened risk of persons with disabilities and older persons is generally recognised by affected populations and humanitarian actors alike, a lack of data on disability prevalence across camps, as well as the specific requirements, barriers, and preferences of older persons and persons with disabilities complicates evidence-based inclusive programming.")),
-
-          p(HTML("Against this background, REACH, with technical support from the Age and Disability Working Group (ADWG), conducted an Age and Disability Inclusion Needs Assessment across Rohingya refugee populations. The assessment aimed to understand disability prevalence, and to support key actors working in Cox's Bazar, including coordination bodies and technical agencies and actors, to consider the nuanced and specific requirements, access to services and assistance, and involvement of persons with disabilities across all age groups, and older persons living in Rohingya camps, within the response programming. The assessment was coordinated through the ADWG, and implemented with technical contributions from an Age and Disability Task Team (ADTT). The ADTT comprised the United Nations High Commissioner for Refugees (UNHCR), the International Organization for Migration Needs and Population Monitoring (IOM NPM), the Water, Sanitation and Hygiene (WASH) Sector, and REACH Initiative. Technical contributions were further made by Humanity & Inclusion (HI), Christian Blind Mission, the Centre for Disability in Development, and Prottyashi. REACH Initiative is an implimenting partner of HELVETAS Swiss Intercooperation.")),
-
-          h5(HTML(sprintf("<span style='color: %s;'><strong>METHODOLOGY</span></strong>", colours$reach_red))),
-
-          p(HTML("The assessment consisted of a quantitative household survey and a qualitative component consisting of focus group discussions (FGDs). The quantitative component was implemented in all 34 camps in Ukhiya and Teknaf Upazilas. A stratified cluster sampling approach was employed, with the camps as strata and households as clusters. Information related to disability prevalence was collected through the Washington Group Questions on all household members in sampled households aged 2 and above. Information on service utilisation, access barriers and enablers, as well as participation and disaster preparedness was collected on sub-samples of those individuals. Information was collected directly from the concerned individuals themselves, if possible. In all other cases, information was collected by proxy from another adult household member. In total, 2,530 household interviews, covering 11,187 individuals aged 2 and above, were carried out between 30 November 2020 and 7 January 2021. Basic descriptive analysis was conducted, complemented by testing for statistically significant differences in outcomes between persons with and without disabilities overall, for different age groups and genders, by types of functional difficulty, and between households with and without persons with disabilities. The achieved level of representativeness of findings differs by the sub-samples addressed for each question. For detailed information on levels of representativeness, as well as challenges and limitations of the assessment, please refer to the Age and Disability Needs Inclusion Assessment report (linked below). FGDs were conducted to further contextualise quantitative findings and provide more detailed insights into the specific barriers persons with disabilities and older persons face accessing services, participating in community life and in disaster preparedness, as well as potential solutions. A total of 20 FGDs were conducted with older persons with and without disabilities, adults with disabilities, children with disabilities (aged 11 to 17), and caregivers of children with disabilities, between 12 January and 8 February 2021.")),
+          width = 600,
           
-          p(HTML("For more in-depth, granular findings, including p-values, margins of error and sample sizes, please visit the assessment outputs.")),
-          
-          p(HTML("<strong>Outputs from the Age and Disability Needs Inclusion Assessment can be downloaded here: </strong><a href=\"https://www.reachresourcecentre.info/country/bangladesh/cycle/31656/#cycle-31656\"   target=\"_blank\"><img class='icon' src='noun_Download_2120764.svg' style = 'width:15px; height:15px;margin-top:5px'></a>"))
-        ),
+          div(class = "navbar2",
+              navbarPage(selected = "context", #position = "fixed-bottom",
+                         
+                         tabPanel(title = " ",  value = "Blank"), # This is a botch - without this the format is strange.
+                         
+                         tabPanel(title = h5(HTML("<span><strong>CONTEXT</span></strong>")),
+                                  value = "context",
+                                  absolutePanel(
+                                    id = "red_box",class = "panel panel-default",
+                                    draggable = F, top = 52,
+                                    left = 0,# right = 600,
+                                    width = 600,
+                                    context
+                                  )),
+                         
+                         tabPanel(title = h5(HTML("<span><strong>METHODOLOGY</span></strong>")),
+                                  value = "Methodology",
+                                  absolutePanel(
+                                    id = "red_box",class = "panel panel-default",
+                                    draggable = F, top = 52,
+                                    left = 0,# right = 600,
+                                    width = 600,
+                                    methods_text)),
+                         
+                         tabPanel(title = h5(HTML("<span><strong>DISABILITY PREVALENCE - KEY FINDINGS</span></strong>")),
+                                  value = "PREVALENCE",
+                                  absolutePanel(
+                                    id = "red_box",class = "panel panel-default",
+                                    draggable = F, top = 52,
+                                    left = 0,
+                                    width = 600,
+                                    prevolence))))),
 
-
+          # h5(HTML( # Overview Page Box Title:
+          #   sprintf("<span style='color: %s;'><br><strong>CONTEXT</span></strong>", colours$reach_red))),
+    
 # ---- Set up the controls for the map input: -----------------------------
 
         absolutePanel(
@@ -1474,9 +1521,7 @@ output$mapOverview <- renderLeaflet({
     addScaleBar(position = "bottomright", scaleBarOptions(imperial = FALSE)) %>%
 
     # Set initial view coordinates;
-    setView(lng = 92.1,
-            lat = 21.0707,
-            zoom = 11.5)
+    setView(lng = 92.05, lat = 21.0706, zoom = 11.2)
 })
 
 
